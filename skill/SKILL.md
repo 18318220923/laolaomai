@@ -66,7 +66,7 @@ agent_created: true
 - `scripts/main.py`：主执行脚本。意图解析（可选 LLM，规则兜底）→ MCP 工具调用 → 生成候选方案。LLM 经环境变量启用：`MCP_ORDER_LLM_BASE_URL` / `MCP_ORDER_LLM_API_KEY` / `MCP_ORDER_LLM_MODEL`（OpenAI 兼容接口），未配置自动回退规则解析；`--no-llm` 可强制规则。本地调试：`python scripts/main.py "预算25块，想吃带肉的，不要太撑" --budget 25 --pickup_type 自提`
 - `scripts/price_calculator.py`：兼容两种算价格式（简化元单位 / 真实 mcd-mcp 分单位），自动归一化并计算节省金额，数据不完整抛错提示"价格需以下单页为准"。
 - `scripts/coupon_filter.py`：按有效期/适用星期/渠道校验券当前可用性并输出原因；query-my-coupons 返回的券必须经此过滤后再用于推荐。
-- `scripts/order_confirm.py`：生成下单确认卡文本，包含门店、取餐方式、商品、优惠券、实付金额。支持 `--theme default|cute` 两套主题（cute 为原创可爱风，见 `references/cute_theme.md`）。
+- `scripts/order_confirm.py`：生成下单确认卡文本，包含门店、取餐方式、商品、优惠券、实付金额。支持 `--theme default|cute` 两套主题（cute 为原创活力红金风：品牌红 `#DB0007` + 金黄 `#FFBC0D` + 白底，见 `references/cute_theme.md`）。
 - `scripts/place_order.py`：下单链路。无口令只出确认卡；口令严格等于「确认下单」才继续；默认 dry-run，`--execute --mcp_server <id>` 才真实调用 MCP 下单。
 - `scripts/deal_compare.py`：外部团购渠道（美团/抖音等）与官方实付价同台比价；外部价格一律标"未验证，以平台下单页为准"。
 
@@ -75,11 +75,11 @@ agent_created: true
 - `references/mcp_config_example.json`：MCP Server 配置示例（mcp.json 格式，不含真实密钥）。开发者可替换 model_provider 与餐饮 MCP Server。
 - `references/prompt_template.md`：点单 Agent 系统提示词模板，方便替换为自定义提示词。
 - `references/mcd_tool_map.md`：麦当劳 MCP 工具实测地图——beType/orderType 矩阵、算价单位（分）、特调 key 规则、券校验坑等。接入真实 Server 前必读。
-- `references/cute_theme.md`：原创可爱风主题指南（粉白配色、蝴蝶结元素、软萌语气），**不使用任何受版权保护的 IP 素材**。用户偏好可爱风格时按此输出。
+- `references/cute_theme.md`：原创活力红金风主题指南（品牌红 + 金黄 + 白底，快餐活力调性），**不使用任何品牌官方素材或受版权保护的 IP**。用户偏好活力/醒目风格时按此输出。
 
 ## 输出主题
 
-默认简洁版；用户表达偏好可爱/少女心/粉色风格时，切换 cute 主题（确认卡用 `assets/order_card_template_cute.md`，文案按 cute_theme.md）。关键数字（价格/热量/有效期）和安全提示在任何主题下都必须准确清晰。
+默认简洁版；用户表达偏好活力/醒目/快餐品牌风格时，切换 cute 主题（确认卡用 `assets/order_card_template_cute.md`，文案按 cute_theme.md）。关键数字（价格/热量/有效期）和安全提示在任何主题下都必须准确清晰。
 
 ## 输出规范
 
