@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>捞捞麦 · AI 点单管家</title>
+<script src="https://cdn.jsdelivr.net/npm/@tencent-ai/workbuddy-cloud-sdk@dev/lib/index.global.js"></script>
+<style>
+  * { margin:0; padding:0; box-sizing:border-box; }
+  html { scroll-behavior:smooth; }
+  body {
+    font-family: "PingFang SC", "Microsoft YaHei", sans-serif;
+    background: linear-gradient(160deg, #FFF8F5 0%, #FFE9EE 50%, #FFD9E3 100%);
+    color: #5A3A44;
+  }
+
+  /* ===== 第一屏：门面 ===== */
+  .hero {
+    min-height: 100vh; display:flex; flex-direction:column;
+    align-items:center; justify-content:center; padding:40px 20px;
+    text-align:center; position:relative;
+  }
+  .hero img {
+    width:100%; max-width:720px; border-radius:24px;
+    box-shadow:0 16px 48px rgba(233,30,99,.22);
+  }
+  .hero h1 { margin-top:22px; font-size:38px; color:#D6336C; letter-spacing:2px; }
+  .hero .slogan { margin-top:8px; font-size:18px; color:#A05A6E; }
+  .hero .tags { margin-top:16px; display:flex; gap:10px; flex-wrap:wrap; justify-content:center; }
+  .tag {
+    padding:5px 14px; border-radius:999px; font-size:13px;
+    background:rgba(255,255,255,.85); color:#D6336C;
+    border:1px solid #F4B8C9;
+  }
+  .scroll-hint {
+    position:absolute; bottom:26px; left:50%; transform:translateX(-50%);
+    font-size:13px; color:#C77B92; animation:bob 1.6s ease-in-out infinite;
+  }
+  @keyframes bob { 0%,100%{transform:translate(-50%,0)} 50%{transform:translate(-50%,8px)} }
+
+  /* ===== 第二屏：活的产品演示 ===== */
+  .demo { padding:60px 16px 80px; display:flex; flex-direction:column; align-items:center; }
+  .demo h2 { font-size:26px; color:#D6336C; margin-bottom:6px; }
+  .demo .sub { font-size:14px; color:#A05A6E; margin-bottom:26px; }
+  .phone {
+    width:100%; max-width:430px; background:#FFF;
+    border-radius:32px; box-shadow:0 18px 50px rgba(214,51,108,.20);
+    overflow:hidden; border:6px solid #FFE1EA;
+  }
+  .phone-bar {
+    background:linear-gradient(90deg,#F06292,#E91E63); color:#fff;
+    padding:12px 16px; font-size:14px; display:flex; align-items:center; gap:8px;
+  }
+  .phone-bar .dot { width:8px; height:8px; border-radius:50%; background:#7CFF9B; }
+  .chat { padding:16px 14px 20px; min-height:480px; background:#FFF7F9; }
+  .msg { display:flex; margin-bottom:12px; opacity:0; transform:translateY(10px); transition:all .4s ease; }
+  .msg.show { opacity:1; transform:translateY(0); }
+  .msg.user { justify-content:flex-end; }
+  .bubble {
+    max-width:82%; padding:10px 14px; border-radius:16px;
+    font-size:14px; line-height:1.7; white-space:pre-line;
+  }
+  .msg.bot .bubble { background:#fff; border:1px solid #F8D3DE; border-top-left-radius:4px; color:#5A3A44; }
+  .msg.user .bubble { background:linear-gradient(135deg,#F06292,#E91E63); color:#fff; border-top-right-radius:4px; }
+  .bubble .plan { margin-top:6px; padding:8px 10px; background:#FFF0F4; border-radius:10px; border-left:3px solid #F06292; }
+  .bubble .plan b { color:#D6336C; }
+  .bubble .price { color:#E91E63; font-weight:700; }
+  .bubble .save { color:#2E9E5B; font-weight:600; }
+  .bubble .warn { color:#B07503; }
+  .confirm-card {
+    margin-top:6px; padding:10px 12px; background:#FFF0F4; border-radius:12px;
+    border:1px dashed #F4A9C0; font-size:13px; line-height:1.9;
+  }
+  .confirm-card .ttl { text-align:center; color:#D6336C; font-weight:700; }
+  .typing { display:inline-flex; gap:4px; padding:12px 16px; background:#fff; border:1px solid #F8D3DE; border-radius:16px; border-top-left-radius:4px; }
+  .typing span { width:7px; height:7px; border-radius:50%; background:#F4A9C0; animation:blink 1s infinite; }
+  .typing span:nth-child(2){ animation-delay:.2s } .typing span:nth-child(3){ animation-delay:.4s }
+  @keyframes blink { 0%,100%{opacity:.3} 50%{opacity:1} }
+  .replay {
+    margin-top:20px; padding:9px 26px; border:none; border-radius:999px;
+    background:linear-gradient(135deg,#F06292,#E91E63); color:#fff;
+    font-size:14px; cursor:pointer; box-shadow:0 6px 16px rgba(233,30,99,.3);
+  }
+  .replay:active { transform:scale(.96); }
+
+  /* ===== 第三屏：亲自体验 ===== */
+  .try { padding:10px 16px 70px; display:flex; flex-direction:column; align-items:center; }
+  .try h2 { font-size:26px; color:#D6336C; margin-bottom:6px; }
+  .try .sub { font-size:14px; color:#A05A6E; margin-bottom:22px; text-align:center; line-height:1.8; }
+  .chips { display:flex; gap:8px; flex-wrap:wrap; justify-content:center; margin-bottom:14px; max-width:430px; }
+  .chip {
+    padding:6px 14px; border-radius:999px; font-size:13px; cursor:pointer;
+    background:#fff; color:#D6336C; border:1px solid #F4B8C9; transition:all .2s;
+  }
+  .chip:hover { background:#FFE4EC; }
+  .try-input { display:flex; gap:8px; width:100%; max-width:430px; margin-top:4px; }
+  .try-input input {
+    flex:1; padding:11px 16px; border-radius:999px; border:1px solid #F4B8C9;
+    font-size:14px; outline:none; background:#fff; color:#5A3A44;
+  }
+  .try-input input:focus { border-color:#F06292; box-shadow:0 0 0 3px rgba(240,98,146,.15); }
+  .try-input button {
+    padding:11px 20px; border:none; border-radius:999px;
+    background:linear-gradient(135deg,#F06292,#E91E63); color:#fff;
+    font-size:14px; cursor:pointer; white-space:nowrap;
+  }
+  .dl {
+    margin-top:26px; display:inline-block; padding:10px 26px; border-radius:999px;
+    background:#fff; color:#D6336C; border:1px solid #F4B8C9; font-size:14px;
+    text-decoration:none;
+  }
+
+  /* ===== 底部 ===== */
+  .foot { text-align:center; padding:0 20px 50px; color:#B98A99; font-size:13px; line-height:2; }
+  .foot b { color:#D6336C; }
+</style>
+</head>
+<body>
+
+<!-- 第一屏：门面 -->
+<section class="hero">
+  <img src="cover.png" alt="捞捞麦封面">
+  <h1>捞捞麦</h1>
+  <p class="slogan">致力于解决中国宝宝吃饭问题 · 说人话就能点单，不确认不下单</p>
+  <div class="tags">
+    <span class="tag">🎀 自然语言点单</span>
+    <span class="tag">🧾 真实算价验证</span>
+    <span class="tag">🎟 优惠券过滤提醒</span>
+    <span class="tag">🔒 安全确认机制</span>
+  </div>
+  <div class="scroll-hint">👇 下滑看活的产品演示</div>
+</section>
+
+<!-- 第二屏：活的产品演示 -->
+<section class="demo" id="demo">
+  <h2>🍔 活的产品演示</h2>
+  <p class="sub">以下为「捞捞麦」真实运行回放 · 数据来自麦当劳 MCP 实时接口</p>
+  <div class="phone">
+    <div class="phone-bar"><span class="dot"></span>捞捞麦 · AI 点单管家 在线</div>
+    <div class="chat" id="chat"></div>
+  </div>
+  <button class="replay" id="replayBtn">🔄 重新播放</button>
+</section>
+
+<!-- 第三屏：亲自体验 -->
+<section class="try">
+  <h2>🎮 评委亲自体验</h2>
+  <p class="sub">真实大模型实时应答 · 菜单与价格来自麦当劳官方接口快照（2026-10-24）<br>下单为演示流程，不会产生真实订单</p>
+  <div class="chips">
+    <span class="chip" onclick="trySend('预算25块，想吃带肉的，不要太撑')">💰 预算25块带肉</span>
+    <span class="chip" onclick="trySend('想吃清淡一点的，少油')">🥗 清淡少油</span>
+    <span class="chip" onclick="trySend('想吃辣的汉堡')">🌶 想吃辣的</span>
+    <span class="chip" onclick="trySend('有什么优惠和券可以用')">🎟 查优惠</span>
+  </div>
+  <div class="phone">
+    <div class="phone-bar"><span class="dot"></span>捞捞麦 · AI 实时对话</div>
+    <div class="chat" id="tryChat" style="min-height:320px; max-height:440px; overflow-y:auto;">
+      <div class="msg bot show"><div class="bubble">你好呀～我是捞捞麦 🎀
+我的大脑是真实大模型，菜单和价格来自麦当劳官方接口。试试对我说点单需求，比如「预算50，想吃汉堡」；也可以点上方快捷按钮。</div></div>
+    </div>
+  </div>
+  <div class="try-input">
+    <input id="tryInput" type="text" placeholder="输入你的点单需求，如：预算20块想吃带肉的…" onkeydown="if(event.key==='Enter')trySend()">
+    <button onclick="trySend()">发送</button>
+  </div>
+  <a class="dl" href="mcp-order-agent.zip" download>📦 下载技能安装包（mcp-order-agent.zip），装到本地体验真实下单链路</a>
+</section>
+
+<footer class="foot">
+  <b>捞捞麦</b> · 基于 MCP 协议的 AI 点单管家<br>
+  真实菜单 · 真实优惠券 · 真实算价 · 确认前绝不下单<br>
+  评委体验方式：① 上方「亲自体验」区直接对话（演示模式）② 下载技能包装入 WorkBuddy 走真实链路
+</footer>
+
+<script>
+// 真实运行数据回放（2026-10-24 实测：麦当劳广州增城华立学院餐厅，到店自提）
+const script = [
+  { who:"user", text:"帮我点麦当劳，预算25块，想吃带肉的，不要太撑，自提", delay:600 },
+  { who:"bot", typing:900, html:`好的～已解析你的需求 🎀
+📍 门店：麦当劳广州增城华立学院餐厅
+🧁 取餐：到店自提 ｜ 💰 预算：¥25
+正在查实时菜单 / 优惠券 / 算价…` },
+  { who:"bot", typing:1200, html:`为你找到 <b>3 个方案</b>（价格均经算价接口验证 ✅）：
+<div class="plan"><b>方案1 🏆 龙焰鸡腿堡+灰焰圆筒</b><br>原价 ¥29.0 → <span class="price">实付 ¥20.9</span>（<span class="save">促销立减 ¥8.1</span>）<br>份量适中不撑，性价比最高</div>
+<div class="plan"><b>方案2 板烧鸡腿堡</b><br><span class="price">实付 ¥23.5</span> ｜ 约 391 kcal<br>非油炸清淡少油，最贴合"不太撑"</div>
+<div class="plan"><b>方案3 麦香鸡+脆薯饼</b><br><span class="price">实付 ¥24.5</span> ｜ 约 515 kcal<br>有主食有配，卡满预算</div>` },
+  { who:"bot", typing:900, html:`📋 <b>券状态（已自动过滤）</b>
+❌ 11.9元麦辣鸡腿堡券 — <span class="warn">尚未生效（10/26 起）</span>
+❌ 19.9元王牌炸鸡任选2 — <span class="warn">尚未生效（同上）</span>
+💡 小提醒：等周一用券，麦辣鸡腿堡只要 <span class="price">¥11.9</span>！
+请回复方案编号～` },
+  { who:"user", text:"方案 1", delay:1400 },
+  { who:"bot", typing:800, html:`已为你生成确认卡，请核对：
+<div class="confirm-card"><div class="ttl">🎀 下单确认卡 1 🎀</div>
+💗 门店：麦当劳华立学院餐厅
+🧁 取餐方式：到店自提
+🍔 商品：龙焰鸡腿堡×1 + 灰焰圆筒×1
+🎀 优惠券：促销立减 ¥8.1
+💰 实付金额：<span class="price">¥20.9</span></div>
+回复「确认下单」才会创建订单，其他回复视为取消哦～` },
+  { who:"user", text:"确认下单", delay:1600 },
+  { who:"bot", typing:900, html:`✅ 订单已创建成功！
+支付方式与配送进度请在麦当劳小程序查看。
+价格以最终下单页为准，营养信息仅供参考。
+感谢使用捞捞麦，祝你用餐愉快 🌸` },
+];
+
+const chat = document.getElementById("chat");
+let timerIds = [];
+
+function clearChat() {
+  timerIds.forEach(clearTimeout); timerIds = [];
+  chat.innerHTML = "";
+}
+
+function play() {
+  clearChat();
+  let t = 400;
+  script.forEach(step => {
+    t += step.delay || 500;
+    if (step.who === "user") {
+      timerIds.push(setTimeout(() => addMsg("user", step.text), t));
+    } else {
+      // 打字中…
+      timerIds.push(setTimeout(() => {
+        const tp = document.createElement("div");
+        tp.className = "msg bot show"; tp.id = "typing";
+        tp.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+        chat.appendChild(tp); scrollBottom();
+      }, t));
+      t += step.typing;
+      timerIds.push(setTimeout(() => {
+        document.getElementById("typing")?.remove();
+        addMsg("bot", step.html, true);
+      }, t));
+    }
+  });
+}
+
+function addMsg(who, content, isHtml) {
+  const m = document.createElement("div");
+  m.className = `msg ${who}`;
+  const b = document.createElement("div");
+  b.className = "bubble";
+  if (isHtml) b.innerHTML = content; else b.textContent = content;
+  m.appendChild(b); chat.appendChild(m);
+  requestAnimationFrame(() => m.classList.add("show"));
+  scrollBottom();
+}
+function scrollBottom() {
+  const c = document.getElementById("chat");
+  c.scrollTop = c.scrollHeight;
+}
+
+document.getElementById("replayBtn").addEventListener("click", play);
+
+/* ===== 亲自体验：真实大模型引擎（云服务免密钥 LLM + 官方菜单快照） ===== */
+let cloud = null, modelId = null, systemPrompt = null;
+let chatHistory = [];           // 应用侧维护的多轮上下文
+let llmCalls = 0;               // 简单限流
+const MAX_CALLS = 20;
+const conversationId = "demo-" + Date.now() + "-" + Math.random().toString(36).slice(2, 8);
+
+async function initLLM() {
+  try {
+    cloud = WorkBuddyCloud.createWorkBuddyCloud({
+      endpoint: "https://laolaomai-order-agent.app.workbuddy.host",
+      oauthRelayBaseUrl: "https://www.workbuddy.cn/v2/as/genie-baas/oauth",
+      publishableKey: "wbpk_jYN4Bw1nFFs4E6qadiC9cy_fKw94QKwKGJdffutLAMhchokkVeA93CZ",
+    });
+    const models = await cloud.llm.models.list();
+    const m = models.find(x => x.disabled !== true);
+    if (!m) throw new Error("no-model");
+    modelId = m.id;
+    const menu = await (await fetch("data/menu.json")).json();
+    const menuText = menu.items.map(p =>
+      `${p.name}｜¥${p.price}${p.original > p.price ? `（原价¥${p.original}，${p.discount}）` : ""}｜${p.category}｜${(p.tags || []).join("/")}${p.kcal ? `｜约${p.kcal}kcal` : ""}`
+    ).join("\n");
+    const couponText = menu.coupons.map(c => `${c.name}（${c.valid_from} 起生效，${c.weekdays}可用，今日${c.status_today}）`).join("；");
+    systemPrompt = `你是「捞捞麦」，一个可爱但严谨的 AI 点单管家。语气软萌（可用 🎀🌸 表情），但涉及价格、热量等数字必须绝对准确严肃。
+
+【门店】${menu.store}（到店自提），数据快照时间 ${menu.snapshot_time}。
+【真实菜单（官方接口数据，只能从这里选品，禁止编造商品和价格）】
+${menuText}
+【优惠券状态】${couponText}。推荐时如实告知券今日不可用及生效时间。
+
+【工作规则】
+1. 解析用户的预算、口味（辣/清淡/带肉等）、份量约束，从真实菜单中组合 2-3 个方案。
+2. 每个方案给出：商品组合、实付金额（元，两位小数）、节省金额（原价-现价）、热量（有数据才写，没有就说"暂无热量数据"）、一句推荐理由。
+3. 预算不足时给出替代建议（加预算/换小份/单点小食）。
+4. 用户选定方案后，输出下单确认卡（门店/取餐方式/商品/实付金额），并明确说"回复「确认下单」完成演示"。
+5. 用户说「确认下单」后，说明这是演示环境不会真实扣款，并强调真实版的安全机制：未确认绝不下单、不碰支付、价格以下单页为准。
+6. 营养热量仅供参考，不构成医疗建议。
+7. 回答控制在 200 字以内（方案列表除外），直接给结果，不要解释你的工作过程。`;
+  } catch (e) {
+    tryAdd("bot", "⚠️ AI 服务初始化失败（本地预览不可用，请通过已发布的在线链接访问）。");
+  }
+}
+initLLM();
+
+function trySend(preset) {
+  const input = document.getElementById("tryInput");
+  const text = preset || input.value.trim();
+  if (!text) return;
+  input.value = "";
+  tryAdd("user", text);
+  askLLM(text);
+}
+
+function tryAdd(who, content, isHtml) {
+  const c = document.getElementById("tryChat");
+  const m = document.createElement("div");
+  m.className = `msg ${who}`;
+  const b = document.createElement("div");
+  b.className = "bubble";
+  if (isHtml) b.innerHTML = content; else b.textContent = content;
+  m.appendChild(b); c.appendChild(m);
+  requestAnimationFrame(() => m.classList.add("show"));
+  c.scrollTop = c.scrollHeight;
+}
+
+function escapeHtml(s) {
+  return s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+}
+
+async function askLLM(text) {
+  if (!cloud || !modelId || !systemPrompt) {
+    setTimeout(() => tryAdd("bot", "AI 服务还没准备好，请稍等一下再发～如果一直不行，请确认你正在通过在线链接访问。"), 400);
+    return;
+  }
+  if (llmCalls >= MAX_CALLS) {
+    tryAdd("bot", "本次会话的体验次数用完啦～刷新页面可以重新开始 🎀");
+    return;
+  }
+  llmCalls++;
+
+  // 打字指示
+  const c = document.getElementById("tryChat");
+  const tp = document.createElement("div");
+  tp.className = "msg bot show";
+  tp.innerHTML = `<div class="typing"><span></span><span></span><span></span></div>`;
+  c.appendChild(tp); c.scrollTop = c.scrollHeight;
+
+  // 用户输入只做纯文本传输，不允许改写系统指令
+  const safeText = text.slice(0, 200);
+  const messages = [
+    { role: "system", content: systemPrompt },
+    ...chatHistory.slice(-8),   // 有界历史
+    { role: "user", content: safeText },
+  ];
+
+  let answer = "";
+  let bubbleEl = null;
+  try {
+    for await (const chunk of cloud.llm.chat.completions.create({
+      model: modelId,
+      messages,
+      stream: true,
+      conversationId,
+    })) {
+      const delta = chunk.choices?.[0]?.delta?.content;
+      if (delta) {
+        answer += delta;
+        if (!bubbleEl) {
+          tp.remove();
+          const m = document.createElement("div");
+          m.className = "msg bot show";
+          bubbleEl = document.createElement("div");
+          bubbleEl.className = "bubble";
+          m.appendChild(bubbleEl); c.appendChild(m);
+        }
+        bubbleEl.innerHTML = escapeHtml(answer).replace(/\n/g, "<br>");
+        c.scrollTop = c.scrollHeight;
+      }
+    }
+    tp.remove();
+    if (!answer) { tryAdd("bot", "（模型没有返回内容，请再试一次）"); return; }
+    chatHistory.push({ role: "user", content: safeText }, { role: "assistant", content: answer });
+  } catch (err) {
+    tp.remove();
+    const code = err?.error?.code || "";
+    let tip = "AI 服务暂时开小差了，请稍后再试～";
+    if (code.startsWith("quota_")) tip = "今日体验额度已用完，明天再来找我玩吧～";
+    else if (code.startsWith("auth_")) tip = "服务鉴权失败，请通过在线链接访问。";
+    else if (code.startsWith("gateway_") || code.startsWith("model_")) tip = "模型服务暂时不可用，请点重试～";
+    tryAdd("bot", "⚠️ " + tip);
+  }
+}
+
+
+// 滚动到演示区时自动播放
+let played = false;
+new IntersectionObserver(entries => {
+  if (entries[0].isIntersecting && !played) { played = true; play(); }
+}, { threshold: 0.3 }).observe(document.getElementById("demo"));
+</script>
+</body>
+</html>

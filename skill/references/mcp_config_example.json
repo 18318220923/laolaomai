@@ -1,0 +1,42 @@
+{
+  "mcpServers": {
+    "mcd-food": {
+      "comment": "示例：餐饮 MCP Server（麦当劳类）。仅作结构示例，不包含真实密钥。开发者可替换为麦当劳、瑞幸或其他餐饮接口的 MCP Server。",
+      "command": "npx",
+      "args": ["-y", "@example/food-mcp-server@latest"],
+      "env": {
+        "FOOD_MCP_BASE_URL": "https://api.example-food.com",
+        "FOOD_MCP_API_KEY": "<在此填入你的 API Key，勿提交到代码仓库>",
+        "STORE_ID": "S001"
+      },
+      "tools": {
+        "menu": "query-meals / query-nearby-stores / query-store-detail",
+        "coupon": "query-my-coupons / query-store-coupons / auto-bind-coupons",
+        "price": "calculate-price / query-promotions",
+        "nutrition": "list-nutrition-foods",
+        "order": "create-order / query-order / cancel-order"
+      }
+    },
+    "luckin-food": {
+      "comment": "示例：另一个可替换的餐饮 MCP Server（瑞幸类）。模型层与 MCP Server 均可独立替换。",
+      "command": "npx",
+      "args": ["-y", "@example/luckin-mcp-server@latest"],
+      "env": {
+        "FOOD_MCP_BASE_URL": "https://api.example-coffee.com",
+        "FOOD_MCP_API_KEY": "<在此填入你的 API Key>"
+      }
+    }
+  },
+  "agentConfig": {
+    "comment": "点单 Agent 的可选配置：模型层可替换为通义千问、Kimi、DeepSeek、Claude 等。",
+    "model_provider": "qwen",
+    "model_options": ["qwen", "kimi", "deepseek", "claude"],
+    "default_pickup_type": "自提",
+    "max_proposals": 4,
+    "safety": {
+      "require_user_confirm_before_order": true,
+      "never_pay_without_confirmation": true,
+      "show_price_disclaimer_when_unverified": true
+    }
+  }
+}
