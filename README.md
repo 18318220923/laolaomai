@@ -31,7 +31,7 @@
 | 真实算价验证 | 优惠金额只采用算价工具返回值，绝不自行推算 |
 | 营养估算 | 命中官方营养数据时输出热量，缺失时如实标注"暂无数据" |
 | 多渠道比价 | 官方实付价 vs 美团/抖音等外部券同台对比，外部价一律标注未验证 |
-| 双主题输出 | 简洁版 / 可爱风（原创设计，不含第三方 IP 素材） |
+| 双主题输出 | 简洁版 / 活力红金风（原创设计，不含第三方 IP 素材） |
 
 ## 快速开始
 
@@ -82,7 +82,7 @@ laolaomai-repo/
 │   │   ├── mcp_config_example.json # MCP Server 配置示例（不含真实密钥）
 │   │   ├── prompt_template.md      # 系统提示词模板
 │   │   ├── mcd_tool_map.md         # 麦当劳 MCP 实测工具地图（接入前必读）
-│   │   └── cute_theme.md           # 可爱风主题指南
+│   │   └── cute_theme.md           # 活力红金风主题指南
 │   └── assets/
 │       ├── order_card_template.md
 │       └── order_card_template_cute.md
